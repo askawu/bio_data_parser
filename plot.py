@@ -15,6 +15,7 @@ TYPE_PPG512=12
 ECG_FS = 512
 LOW_PASS_CUTOFF = 100
 HIGH_PASS_CUTOFF = 0.5
+MSEC_PER_SEC = 1000
 
 def parse_args():
     p = argparse.ArgumentParser()
@@ -39,8 +40,20 @@ def is_ecg(t):
     else:
         return False
 
+def is_ppg125(t):
+    if int(t) == TYPE_PPG125:
+        return True
+    else:
+        return False
+
+def is_ppg512(t):
+    if int(t) == TYPE_PPG512:
+        return True
+    else:
+        return False
+
 def is_ppg(t):
-    if int(t) == TYPE_PPG125 or int(t) == TYPE_PPG512:
+    if is_ppg125(t) or is_ppg512(t):
         return True
     else:
         return False
@@ -86,8 +99,8 @@ def plot_low_pass_filter(ax, fs, cutoff):
     ax.plot(freq, h, color="r")
 
 def plot_time_domain(ax, data):
-    ax.plot(data)
-    ax.set_xlabel("Time")
+    ax.plot(data[:,0], data[:,1])
+    ax.set_xlabel("Epoch Time (ms)")
     ax.set_ylabel("MV")
 
 def filter_60hz(data, fs):
@@ -120,6 +133,10 @@ if not (is_ecg(args.type[0]) or is_ppg(args.type[0])):
 
 rule = re.compile("^%s," % args.type[0])
 
+base_ms = 0
+fraction = 0
+buf = []
+
 for l in f:
     if not rule.match(l):
         continue
@@ -132,30 +149,51 @@ for l in f:
     elif is_ppg(args.type[0]):
         row = a[2:13:2]
 
+    new_base_ms = int(a[15]) * MSEC_PER_SEC
+
+    if base_ms == 0:
+       base_ms = new_base_ms
+    elif base_ms != new_base_ms:
+        fraction = float(new_base_ms - base_ms) / len(buf)
+        for i in range(0, len(buf)):
+            ts_ms = base_ms + (fraction * i)
+            # sanity check
+            if ts_ms >= new_base_ms:
+                print "Error: timestamp equal to or larger than new base timestamp"
+            data.append((ts_ms, buf[i]))
+        base_ms = new_base_ms
+        buf[:] = []
+
     for i in row:
         if is_ecg(args.type[0]):
             v = convert_ecg_to_mv(float(i))
         elif is_ppg(args.type[0]):
             v = convert_ppg_to_mv(float(i))
-        data.append(v)
+        buf.append(v)
+
+# convert to numpy array
+data = np.array(data)
 
 if is_ecg(args.type[0]):
     _, (ax1, ax2, ax3, ax4) = plot.subplots(4, 1)
 
-    filtered = data
+    filtered = data[:,1]
     filtered = filter_60hz(filtered, ECG_FS)
     filtered = high_pass_filter(filtered, ECG_FS, HIGH_PASS_CUTOFF)
     filtered = low_pass_filter(filtered, ECG_FS, LOW_PASS_CUTOFF)
 
+    filtered = np.column_stack((data[:,0], filtered))
+
     plot_time_domain(ax1, data)
-    plot_freq_domain(ax2, data, ECG_FS)
+    plot_freq_domain(ax2, data[:,1], ECG_FS)
     plot_60hz_filter(ax2, ECG_FS)
     plot_high_pass_filter(ax2, ECG_FS, HIGH_PASS_CUTOFF)
     plot_low_pass_filter(ax2, ECG_FS, LOW_PASS_CUTOFF)
     plot_time_domain(ax3, filtered)
-    plot_freq_domain(ax4, filtered, ECG_FS)
+    plot_freq_domain(ax4, filtered[:,1], ECG_FS)
 
 elif is_ppg(args.type[0]):
-    plot.plot(data)
+    _, ax1 = plot.subplots(1, 1)
+    plot_time_domain(ax1, data)
 
 plot.show()
