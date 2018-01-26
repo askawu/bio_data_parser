@@ -1,11 +1,10 @@
 import matplotlib.pyplot as plot
+import os
 import re
 import sys
 import argparse
 import numpy as np
 import scipy
-from biosppy.signals import ecg
-
 from scipy import signal
 
 TYPE_ECG=5
@@ -19,9 +18,9 @@ MSEC_PER_SEC = 1000
 
 def parse_args():
     p = argparse.ArgumentParser()
+    p.add_argument('--export_csv', help='export to csv file', action='store_true')
     p.add_argument('raw_data_file', nargs=1, help='raw data file')
     p.add_argument('type', nargs=1, help='5: ECG, 9: PPG 125 Hz, 12: PPG 512 Hz)')
-    p.print_help()
     return p.parse_args()
 
 def convert_ppg_to_mv(v):
@@ -171,7 +170,7 @@ for l in f:
             v = convert_ppg_to_mv(float(i))
         buf.append(v)
 
-# convert to numpy array
+# Convert to numpy array
 data = np.array(data)
 
 if is_ecg(args.type[0]):
@@ -192,8 +191,21 @@ if is_ecg(args.type[0]):
     plot_time_domain(ax3, filtered)
     plot_freq_domain(ax4, filtered[:,1], ECG_FS)
 
+    if args.export_csv:
+        basename = os.path.basename(args.raw_data_file[0])
+        csvname = os.path.splitext(basename)[0] + "_ecg.csv"
+        np.savetxt(csvname, filtered, delimiter=",")
+
 elif is_ppg(args.type[0]):
     _, ax1 = plot.subplots(1, 1)
     plot_time_domain(ax1, data)
+
+    if args.export_csv:
+        basename = os.path.basename(args.raw_data_file[0])
+        if is_ppg125(args.type[0]):
+            csvname = os.path.splitext(basename)[0] + "_ppg125.csv"
+        else:
+            csvname = os.path.splitext(basename)[0] + "_ppg512.csv"
+        np.savetxt(csvname, data, delimiter=",")
 
 plot.show()
