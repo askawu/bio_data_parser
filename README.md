@@ -2,7 +2,7 @@
 A python script to process and plot ECG and PPG signal of a mysterious file format
 
 # Usage
-plot.py [-h] [--export_csv] raw_data_file type
+main.py [-h] [--export_csv] raw_data_file type
 
 # File Type
 * For ECG, type should be 5
