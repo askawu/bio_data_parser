@@ -14,7 +14,7 @@ from parser import is_ecg, is_ppg, parse_data, TYPE_ECG
 from filters import power_line_noise_filter
 from filters import high_pass_filter
 from filters import low_pass_filter
-from plots import ecg_to_png
+from plots import plot_ecg, plot_to_png
 
 import numpy as np
 import matplotlib.pyplot as plot
@@ -162,7 +162,8 @@ def process(service, change):
     filtered = low_pass_filter(filtered, ECG_FS, LOW_PASS_CUTOFF)
     filtered = np.column_stack((data[:,0], filtered))
     # save to png
-    ecg_to_png(filtered, local_png_path)
+    plot_ecg(filtered)
+    plot_to_png(local_png_path)
     # upload
     upload_png(service, local_png_path, png_name)
 
