@@ -37,7 +37,6 @@ f = open(args.raw_data_file[0])
 data = parse_data(f, signal_type)
 # Convert to numpy array
 data = np.array(data)
-print data
 
 if is_ecg(signal_type):
     filtered = data[:,1]
