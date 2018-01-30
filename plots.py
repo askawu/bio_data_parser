@@ -89,3 +89,13 @@ def plot_ecg(data):
 
 def plot_to_png(png_name):
     plot.savefig(png_name)
+
+def plot_annotation(ax, data):
+    # randomize the color of vertical lines
+    cmap = plot.cm.get_cmap('hsv', len(data))
+    for i in range(0, len(data)):
+        ms = data[i][0]
+        label = data[i][1]
+        ax.axvline(ms, label=label, color=cmap(i), ls='dashed')
+    # make label work
+    ax.legend()
