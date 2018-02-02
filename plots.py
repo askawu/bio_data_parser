@@ -82,7 +82,7 @@ def plot_ecg(data):
         axes[i].autoscale(False)
         axes[i].vlines(vl, MV_LOW_BOUND, MV_HIGH_BOUND, color='r', alpha=0.2)
         axes[i].hlines(hl, start_ts, end_ts, color='r', alpha=0.2)
-        plot_time_domain(axes[i], s[i])
+        plot_time_domain(axes[i], s[i], color='black')
 
     # adjust layout
     plot.tight_layout(pad=0.3, h_pad = 0.2)
