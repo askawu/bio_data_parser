@@ -5,14 +5,20 @@ from scipy import signal
 PNG_W_INCH = 18
 PNG_H_INCH = 8
 
-def plot_freq_domain(ax, data, fs):
+MV_LOW_BOUND = -1.5
+MV_HIGH_BOUND = 1.5
+MV_STEP = 0.5
+
+MS_STEP = 200
+
+def plot_freq_domain(ax, data, fs, color='b'):
     win = len(data)
     half = win / 2
     amp = np.abs(np.fft.fft(data)) / float(win)
     amp = amp[:half]
     band = np.fft.fftfreq(win, 1/float(fs))
     band = band[:half]
-    ax.plot(band, 20. * np.log10(amp))
+    ax.plot(band, 20. * np.log10(amp), color)
 
 def plot_filter(ax, fs, w, h, color=None):
     """
@@ -47,33 +53,49 @@ def plot_low_pass_filter(ax, fs, cutoff):
     w, h = signal.freqz(b, a)
     plot_filter(ax, fs, w, h, color='r')
 
-def plot_time_domain(ax, data):
-    ax.plot(data[:,0], data[:,1])
+def plot_time_domain(ax, data, color='b'):
+    ax.plot(data[:,0], data[:,1], color)
     ax.set_xlabel("Epoch Time (ms)")
     ax.set_ylabel("MV")
 
-def ecg_to_png(data, png_name):
+def plot_ecg(data):
     figsize = plot.rcParams['figure.figsize']
     figsize[0] = PNG_W_INCH
     figsize[1] = PNG_H_INCH
     plot.rcParams['figure.figsize'] = figsize
 
-    s = np.array_split(data, 4)
-    _, (ax1, ax2, ax3, ax4) = plot.subplots(4, 1)
-    ax1.set_xlim(s[0][0][0], s[0][-1][0])
-    ax2.set_xlim(s[1][0][0], s[1][-1][0])
-    ax3.set_xlim(s[2][0][0], s[2][-1][0])
-    ax4.set_xlim(s[3][0][0], s[3][-1][0])
-    ax1.set_ylim(-0.3, 1.2)
-    ax2.set_ylim(-0.3, 1.2)
-    ax3.set_ylim(-0.3, 1.2)
-    ax4.set_ylim(-0.3, 1.2)
-    ax1.autoscale(False)
-    ax2.autoscale(False)
-    ax3.autoscale(False)
-    ax4.autoscale(False)
-    plot_time_domain(ax1, s[0])
-    plot_time_domain(ax2, s[1])
-    plot_time_domain(ax3, s[2])
-    plot_time_domain(ax4, s[3])
+    num_seg = 4
+    s = np.array_split(data, num_seg)
+    _, axes = plot.subplots(num_seg, 1)
+
+    for i in range(0, num_seg):
+        start_ts = s[i][0][0]
+        end_ts = s[i][-1][0]
+        # vertical lines every 0.2s
+        vl = np.arange(start_ts, end_ts, MS_STEP)
+        # horizontal lines every 0.5 mV
+        hl = np.arange(MV_LOW_BOUND, MV_HIGH_BOUND, MV_STEP)
+
+        axes[i].set_xlim(start_ts, end_ts)
+        axes[i].set_ylim(MV_LOW_BOUND, MV_HIGH_BOUND)
+        # disable autoscale since it will be difficult to compare, e.g., RR interval.
+        axes[i].autoscale(False)
+        axes[i].vlines(vl, MV_LOW_BOUND, MV_HIGH_BOUND, color='r', alpha=0.2)
+        axes[i].hlines(hl, start_ts, end_ts, color='r', alpha=0.2)
+        plot_time_domain(axes[i], s[i], color='black')
+
+    # adjust layout
+    plot.tight_layout(pad=0.3, h_pad = 0.2)
+
+def plot_to_png(png_name):
     plot.savefig(png_name)
+
+def plot_annotation(ax, data):
+    # randomize the color of vertical lines
+    cmap = plot.cm.get_cmap('hsv', len(data))
+    for i in range(0, len(data)):
+        ms = data[i][0]
+        label = data[i][1]
+        ax.axvline(ms, label=label, color=cmap(i), ls='dashed')
+    # make label work
+    ax.legend()
