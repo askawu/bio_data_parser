@@ -18,10 +18,15 @@ from plots import plot_low_pass_filter
 from plots import plot_annotation
 
 ECG_FS = 512
-PPG_FS_125 = 125
-PPG_FS_512 = 512
+PPG_FS_125 = 63 # we skip a half data point which is ambiance
+PPG_FS_512 = 256 # we skip a half data point which is ambiance
+
+#PPG_FS_125 = 125 # we skip a half data point which is ambiance
+#PPG_FS_512 = 512 # we skip a half data point which is ambiance
 LOW_PASS_CUTOFF = 35
 HIGH_PASS_CUTOFF = 0.5
+
+FILTERED_PPG = False
 
 def parse_args():
     p = argparse.ArgumentParser()
@@ -57,12 +62,23 @@ elif is_ppg125(signal_type):
 else:
     fs = PPG_FS_512
 
-filtered = data[:,1]
-# Depends, comment it to favor process speed
-# filtered = power_line_noise_filter(filtered, ECG_FS)
-filtered = high_pass_filter(filtered, fs, HIGH_PASS_CUTOFF)
-filtered = low_pass_filter(filtered, fs, LOW_PASS_CUTOFF)
-filtered = np.column_stack((data[:,0], filtered))
+if is_ecg(signal_type):
+    filtered = data[:,1]
+    # Depends, comment it to favor process speed
+    # filtered = power_line_noise_filter(filtered, ECG_FS)
+    filtered = high_pass_filter(filtered, fs, HIGH_PASS_CUTOFF)
+    filtered = low_pass_filter(filtered, fs, LOW_PASS_CUTOFF)
+    filtered = np.column_stack((data[:,0], filtered))
+else:
+    if FILTERED_PPG:
+        filtered = data[:,1]
+        # Depends, comment it to favor process speed
+        #filtered = power_line_noise_filter(filtered, ECG_FS)
+        filtered = high_pass_filter(filtered, fs, HIGH_PASS_CUTOFF)
+        filtered = low_pass_filter(filtered, fs, LOW_PASS_CUTOFF)
+        filtered = np.column_stack((data[:,0], filtered))
+    else:
+        filtered = data
 
 if args.spectrum:
     _, (ax1, ax2) = plot.subplots(2, 1)
