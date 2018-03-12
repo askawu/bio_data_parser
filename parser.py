@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import re
 
+TYPE_ACC=0
 TYPE_ECG=5
 TYPE_PPG125=9
 TYPE_PPG512=12
@@ -15,6 +16,12 @@ def convert_ecg_to_mv(v):
     if v >= 4194304:
         v = v - 8388608
     return (v * 1000) / (6 * 2097152)
+
+def is_acc(t):
+    if t == TYPE_ACC:
+        return True
+    else:
+        return False
 
 def is_ecg(t):
     if t == TYPE_ECG:
@@ -40,7 +47,21 @@ def is_ppg(t):
     else:
         return False
 
-def parse_data(file_obj, signal_type):
+def parse_acc(file_obj, signal_type):
+    data = []
+    rule = re.compile("^%d," % signal_type)
+
+    for l in file_obj:
+        if not rule.match(l):
+            continue
+        a = l.rstrip("\n").split(',')
+        data.append((int(a[5]), int(a[2]), int(a[3]), int(a[4])))
+        data.append((int(a[9]), int(a[6]), int(a[7]), int(a[8])))
+        data.append((int(a[13]), int(a[10]), int(a[11]), int(a[12])))
+
+    return data
+
+def parse_2511(file_obj, signal_type):
     """
     file_obj:    The file obj come from open() or io.BytesIO
     signal_type: 5, 9, or 12
@@ -86,3 +107,10 @@ def parse_data(file_obj, signal_type):
             buf.append(v)
 
     return data
+
+def parse_data(file_obj, signal_type):
+    if is_acc(signal_type):
+        return parse_acc(file_obj, signal_type)
+    else:
+        return parse_2511(file_obj, signal_type)
+

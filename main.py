@@ -5,7 +5,7 @@ import sys
 import argparse
 import numpy as np
 
-from parser import is_ecg, is_ppg, is_ppg512, is_ppg125, parse_data
+from parser import is_acc, is_ecg, is_ppg, is_ppg512, is_ppg125, parse_data
 from annotation import parse_annotation
 from filters import power_line_noise_filter
 from filters import high_pass_filter
@@ -40,7 +40,7 @@ def parse_args():
 args = parse_args()
 signal_type = int(args.type[0])
 
-if not (is_ecg(signal_type) or is_ppg(signal_type)):
+if not (is_acc(signal_type) or is_ecg(signal_type) or is_ppg(signal_type)):
     print "Wrong type"
     sys.exit(1)
 
@@ -69,7 +69,7 @@ if is_ecg(signal_type):
     filtered = high_pass_filter(filtered, fs, HIGH_PASS_CUTOFF)
     filtered = low_pass_filter(filtered, fs, LOW_PASS_CUTOFF)
     filtered = np.column_stack((data[:,0], filtered))
-else:
+elif is_ppg(signal_type):
     if FILTERED_PPG:
         filtered = data[:,1]
         # Depends, comment it to favor process speed
@@ -79,6 +79,28 @@ else:
         filtered = np.column_stack((data[:,0], filtered))
     else:
         filtered = data
+else:
+    filtered = data
+
+if args.export_csv:
+    basename = os.path.basename(args.raw_data_file[0])
+    if is_ecg(signal_type):
+        csvname = os.path.splitext(basename)[0] + "_ecg.csv"
+    elif is_ppg125(signal_type):
+        csvname = os.path.splitext(basename)[0] + "_ppg125.csv"
+    elif is_ppg512(signal_type):
+        csvname = os.path.splitext(basename)[0] + "_ppg512.csv"
+    elif is_acc(signal_type):
+        csvname = os.path.splitext(basename)[0] + "_acc.csv"
+    np.savetxt(csvname, filtered, delimiter=",")
+
+if is_acc(signal_type):
+    tmp = []
+    for i in filtered:
+        mag = (i[1] ** 2) + (i[2] ** 2) + (i[3] ** 2)
+        tmp.append([i[0], mag])
+    filtered = np.array(tmp)
+    filtered = filtered[filtered[:,0].argsort()]
 
 if args.spectrum:
     _, (ax1, ax2) = plot.subplots(2, 1)
@@ -89,15 +111,5 @@ else:
     _, ax1 = plot.subplots(1, 1)
     plot_time_domain(ax1, filtered)
     plot_annotation(ax1, annot)
-
-if args.export_csv:
-    basename = os.path.basename(args.raw_data_file[0])
-    if is_ecg(signal_type):
-        csvname = os.path.splitext(basename)[0] + "_ecg.csv"
-    elif is_ppg125(signal_type):
-        csvname = os.path.splitext(basename)[0] + "_ppg125.csv"
-    else:
-        csvname = os.path.splitext(basename)[0] + "_ppg512.csv"
-    np.savetxt(csvname, filtered, delimiter=",")
 
 plot.show()
