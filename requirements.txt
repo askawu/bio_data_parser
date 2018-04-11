@@ -1,4 +1,7 @@
+# httplib2 and google-api-python-client are for gd_monitor.py
 matplotlib
 numpy
 scipy
 Rx
+httplib2
+google-api-python-client
