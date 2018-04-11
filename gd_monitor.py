@@ -10,7 +10,7 @@ from oauth2client import client
 from oauth2client import tools
 from oauth2client.file import Storage
 
-from parser import is_ecg, is_ppg, parse_data, TYPE_ECG
+from parser import is_ecg, parse_data, TYPE_ECG
 from filters import power_line_noise_filter
 from filters import high_pass_filter
 from filters import low_pass_filter
