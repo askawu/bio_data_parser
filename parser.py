@@ -39,7 +39,7 @@ def parse_raw_ppg(x):
     """ Parse one line of raw ppg data and add it to ppg data """
     items = x.split(',')
     # convert ppg to mv
-    strs = items[2:13:2]
+    strs = items[2:13]
     nums = map(int, strs)
     nums = map(convert_ppg_to_mv, nums)
     # convert ts to ms

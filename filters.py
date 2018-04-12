@@ -4,8 +4,8 @@ from scipy import signal
 
 ACC_FS = 20
 ECG_FS = 512
-PPG_FS_125 = 63 # we skip a half data point which is ambiance
-PPG_FS_512 = 256 # we skip a half data point which is ambiance
+PPG_FS_125 = 125 # don't skip any received data, ambient data has been skipped by the watch
+PPG_FS_512 = 512 # don't skip any received data, ambient data has been skipped by the watch
 
 LOW_PASS_CUTOFF = 35
 HIGH_PASS_CUTOFF = 0.5
